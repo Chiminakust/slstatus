@@ -9,6 +9,8 @@
 	#include <stdint.h>
 	#include <unistd.h>
 
+int batcon = 1;
+
 	static const char *
 	pick(const char *bat, const char *f1, const char *f2, char *path,
 	     size_t length)
@@ -36,11 +38,13 @@
 		              "/sys/class/power_supply/%s/capacity", bat) < 0) {
 			return NULL;
 		}
-		if (pscanf(path, "%d", &perc) != 1) {
-			return NULL;
+		if (pscanf_bat(batcon, path, "%d", &perc) != 1) {
+			batcon = 0;
+			return bprintf("no bat");
 		}
 
-		return bprintf("%d", perc);
+		batcon = 1;
+		return bprintf("%d%%", perc);
 	}
 
 	const char *
@@ -56,12 +60,16 @@
 		size_t i;
 		char path[PATH_MAX], state[12];
 
+		if (batcon == 0)
+			return bprintf("");
+
 		if (esnprintf(path, sizeof(path),
 		              "/sys/class/power_supply/%s/status", bat) < 0) {
 			return NULL;
 		}
-		if (pscanf(path, "%12s", state) != 1) {
-			return NULL;
+		if (pscanf_bat(batcon, path, "%12s", state) != 1) {
+			batcon = 0;
+			return bprintf("");
 		}
 
 		for (i = 0; i < LEN(map); i++) {
@@ -79,27 +87,33 @@
 		double timeleft;
 		char path[PATH_MAX], state[12];
 
-		if (esnprintf(path, sizeof(path),
-		              "/sys/class/power_supply/%s/status", bat) < 0) {
+		if (batcon == 0)
+			return bprintf("NOREMNOBAT");
+
+		if (esnprintf(path, sizeof(path), 
+				"/sys/class/power_supply/%s/status", bat) < 0) {
 			return NULL;
 		}
-		if (pscanf(path, "%12s", state) != 1) {
+
+		if (pscanf_bat(batcon, path, "%12s", state) != 1) {
 			return NULL;
 		}
 
 		if (!pick(bat, "/sys/class/power_supply/%s/charge_now",
-		          "/sys/class/power_supply/%s/energy_now", path,
-		          sizeof(path)) ||
-		    pscanf(path, "%ju", &charge_now) < 0) {
-			return NULL;
+				"/sys/class/power_supply/%s/energy_now", path,
+				sizeof(path)) ||
+				pscanf(path, "%ju", &charge_now) < 0) {
+			batcon = 0;
+			return bprintf("NOREMNOBAT2");
 		}
 
 		if (!strcmp(state, "Discharging")) {
 			if (!pick(bat, "/sys/class/power_supply/%s/current_now",
-			          "/sys/class/power_supply/%s/power_now", path,
-			          sizeof(path)) ||
-			    pscanf(path, "%ju", &current_now) < 0) {
-				return NULL;
+					"/sys/class/power_supply/%s/power_now", path,
+					sizeof(path))
+					|| pscanf_bat(batcon, path, "%ju", &current_now) < 0) {
+				batcon = 0;
+				return bprintf("NOREMNOBAT3");
 			}
 
 			if (current_now == 0) {

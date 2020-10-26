@@ -76,6 +76,54 @@
 	#include <sys/soundcard.h>
 
 	const char *
+	vol_perc_auto(void)
+	{
+		FILE* fp;
+		const char volcmd[] = "amixer -D pulse sget Master | grep 'Left:' | awk -F'[][]' '{ print $2 }'";
+		const char mutecmd[] = "amixer -D pulse sget Master | grep 'Left:' | awk -F'[][]' '{ print $4 }'";
+		char ret[8];
+		int i;
+
+		/* check if muted */
+		fp = popen(mutecmd, "r");
+		if (fp == NULL) {
+			warn("popen '%s':", mutecmd);
+			pclose(fp);
+			return NULL;
+		}
+
+		fgets(ret, 8, fp);
+		pclose(fp);
+
+		if (strcmp(ret, "off\n") == 0) {
+			return bprintf("off");
+		}
+
+		/* get volume percent */
+		fp = popen(volcmd, "r");
+		if (fp == NULL) {
+			warn("popen '%s':", volcmd);
+			pclose(fp);
+			return NULL;
+		}
+
+		fgets(ret, 8, fp);
+		pclose(fp);
+
+		/* find and replace '%' with '0' to end string */
+		for (i = 0; i < 8; ++i) {
+			if (ret[i] == '%') {
+				ret[i + 1] = '%';
+				ret[i + 2] = 0;
+				break;
+			}
+		}
+
+		return bprintf(ret);
+	}
+
+
+	const char *
 	vol_perc(const char *card)
 	{
 		size_t i;

@@ -68,7 +68,7 @@ static const struct arg args[] = {
 	{ cpu_perc, "[cpu: %s%%]",		NULL },
 	{ ram_perc, "[ram: %s%%]",		NULL },
 	{ temp, "[t: %s°]",				"/sys/class/thermal/thermal_zone0/temp" },
-	{ ipv4, "[eth: %s]",			"enp4s0" },
+	{ ipv4, "[eth: %s]",			"enp3s0" },
 	{ wifi_essid, "[wifi: %s]",		"wlp5s0" },
 	{ vol_perc_auto, "[vol: %s]",	NULL },
 	{ datetime, "%s",           "%F %T" },

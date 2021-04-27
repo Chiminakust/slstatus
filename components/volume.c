@@ -74,13 +74,12 @@
 	}
 #else
 	#include <sys/soundcard.h>
-
 	const char *
 	vol_perc_auto(void)
 	{
 		FILE* fp;
-		const char volcmd[] = "amixer -D pulse sget Master | grep 'Left:' | awk -F'[][]' '{ print $2 }'";
-		const char mutecmd[] = "amixer -D pulse sget Master | grep 'Left:' | awk -F'[][]' '{ print $4 }'";
+		const char volcmd[] = "$HOME/programs/dotfiles/scripts/get_volume_pactl.sh";
+		const char mutecmd[] = "$HOME/programs/dotfiles/scripts/get_mute_state_pactl.sh";
 		char ret[8];
 		int i;
 
@@ -95,7 +94,7 @@
 		fgets(ret, 8, fp);
 		pclose(fp);
 
-		if (strcmp(ret, "off\n") == 0) {
+		if (strcmp(ret, "yes\n") == 0) {
 			return bprintf("off");
 		}
 
@@ -110,11 +109,11 @@
 		fgets(ret, 8, fp);
 		pclose(fp);
 
-		/* find and replace '%' with '0' to end string */
+		/* find and replace LF with '0' to end string */
 		for (i = 0; i < 8; ++i) {
-			if (ret[i] == '%') {
-				ret[i + 1] = '%';
-				ret[i + 2] = 0;
+			if (ret[i] == '\n') {
+				ret[i] = '%';
+				ret[i + 1] = '\0';
 				break;
 			}
 		}
